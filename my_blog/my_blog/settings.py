@@ -31,6 +31,8 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
 ]
 
+
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -72,6 +74,10 @@ DATABASES = {
     }
 }
 
+
+REST_FRAMEWORK = {
+    'NON_FIELD_ERRORS_KEY': 'errors'
+}
 
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
@@ -120,8 +126,9 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 #for authentication
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.BasicAuthentication',
+        'rest_framework.authentication.TokenAuthentication',
         'rest_framework.authentication.SessionAuthentication',
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
     ],
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',

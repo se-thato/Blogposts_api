@@ -9,6 +9,9 @@ urlpatterns = [
     path('user/', views.UserListCreate.as_view(), name='user'),
     path('user/<int:pk>/', views.UserRetrieveUpdateDestroy.as_view(), name= 'update-user'),
     
+    path("register/", views.RegisterView.as_view(), name="register"),
+    path('login/', views.LoginView.as_view(), name='login'),
+
     path('api/users/', ListUsers.as_view()),
     path('api/token/auth/', CustomAuthToken.as_view()),
 ]

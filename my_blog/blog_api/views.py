@@ -1,8 +1,9 @@
 from django.shortcuts import render
 from rest_framework import generics, status,authentication, permissions
 from rest_framework.response import Response
+from rest_framework.exceptions import AuthenticationFailed
 from .models import Post, User
-from .serializers import PostSerializer, UserSerializer
+from .serializers import PostSerializer, UserSerializer, RegisterSerializer
 from django.http import JsonResponse
 from rest_framework.decorators import api_view
 from rest_framework.pagination import PageNumberPagination
@@ -11,7 +12,8 @@ from django.contrib.auth.models import User
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.authtoken.models import Token
 from rest_framework.filters import SearchFilter, OrderingFilter
-
+from rest_framework.request import Request
+import jwt, datetime
 
 class PostListCreate(generics.ListCreateAPIView):
     queryset = Post.objects.all()
@@ -131,3 +133,49 @@ class CustomAuthToken(ObtainAuthToken):
             'email': user.email
         })
 
+
+
+
+
+
+
+
+#creating a view for authentication
+class RegisterView(APIView):
+    def post(self, request):
+        serializer = UserSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response(serializer.data)
+
+class LoginView(APIView):
+    def post(self, request):
+        email = request.data['email']
+        password = request.data['password']
+
+        user= User.objects.filter(email=email).first()
+
+        if user is None:
+            raise AuthenticationFailed('User not found')
+
+        if not user.check_password():
+            raise AuthenticationFailded('incorect password')
+        
+        payload = {
+            'id': user_id,
+            'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=60),
+            'iat': datetime.datetime.utcnow()
+
+        }
+
+        token = jwt.encode(payload, 'secret', algorithm= 'HS256').decode('utf-8')
+
+        return Response({
+            'jwt': token
+        })
+        
+
+
+
+        
