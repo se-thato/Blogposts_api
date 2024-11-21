@@ -8,6 +8,7 @@ urlpatterns = [
     path('posts/<int:pk>/', views.PostRetrieveUpdateDestroy.as_view(), name= 'update'),
     path('user/', views.UserListCreate.as_view(), name='user'),
     path('user/<int:pk>/', views.UserRetrieveUpdateDestroy.as_view(), name= 'update-user'),
+    path('comments/', views.CommentListCreate.as_view(), name= 'comments'),
     
     path("register/", views.RegisterView.as_view(), name="register"),
     path('login/', views.LoginView.as_view(), name='login'),

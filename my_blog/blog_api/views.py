@@ -2,8 +2,8 @@ from django.shortcuts import render
 from rest_framework import generics, status,authentication, permissions
 from rest_framework.response import Response
 from rest_framework.exceptions import AuthenticationFailed
-from .models import Post, User
-from .serializers import PostSerializer, UserSerializer, RegisterSerializer
+from .models import Post, User, Comment
+from .serializers import PostSerializer, UserSerializer, RegisterSerializer, CommentSerializer
 from django.http import JsonResponse
 from rest_framework.decorators import api_view
 from rest_framework.pagination import PageNumberPagination
@@ -82,6 +82,18 @@ class PostRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
     lookup_field = 'pk'
 
 
+class CommentListCreate(generics.ListCreateAPIView):
+    queryset = Comment.objects.all()
+    serializer_class = CommentSerializer
+    #only authenticated/logged in users who can see the comment
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly] 
+    
+
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user)
+
+
+
 class UserListCreate(generics.ListCreateAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
@@ -137,17 +149,16 @@ class CustomAuthToken(ObtainAuthToken):
 
 
 
-
-
-
-#creating a view for authentication
+#register a user
 class RegisterView(APIView):
     def post(self, request):
-        serializer = UserSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
+        serializer = RegisterSerializer(data=request.data)
 
-        return Response(serializer.data)
+        if serializer.is_valid():
+            user = serializer.save()
+            
+            return Response({'message': "You've Been Registered Successfully!!"}, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class LoginView(APIView):
     def post(self, request):

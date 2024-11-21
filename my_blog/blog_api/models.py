@@ -18,6 +18,18 @@ class Post(models.Model):
 
     def __str__(self): 
         return self.title   
+
+
+#creating a comment section
+class Comment(models.Model):
+    post = models.ForeignKey(Post, related_name="comments", on_delete=models.CASCADE)
+    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    comment = models.TextField()
+    published_date = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        #when someone comment we'll be able to see the post, title and their name
+        return '%s - %s' % (self.post.title, self.author)
     
 """
 class User(models.Model):
