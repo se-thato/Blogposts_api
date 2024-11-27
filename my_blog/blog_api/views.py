@@ -81,17 +81,71 @@ class PostRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = PostSerializer
     lookup_field = 'pk'
 
-
+#Creating the commnet section
 class CommentListCreate(generics.ListCreateAPIView):
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
+    search_fields = ['title', 'post', 'author__username', 'comment']
     #only authenticated/logged in users who can see the comment
     permission_classes = [permissions.IsAuthenticatedOrReadOnly] 
+    #creating pagination
+    pagination_class = PageNumberPagination
     
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
 
+    @api_view(['GET', 'POST'])
+    def comment_list(request):
+
+        #get all the available blogposts
+        #serialize them
+        #return json 
+        if request.method == 'GET':
+            comment = Comment.objects.all()
+            serializer = CommentSerializer(comment, many=True)
+            return Response(serializer.data)
+        
+        
+        if request.method == 'POST':
+            serializer = CommentSerializer(data=request.data)
+            #checking the if the data is valid
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+    @api_view(['GET', 'PUT', 'DELETE'])
+    def comments_detail(request, id):
+
+        try:
+            comment = Comment.objects.get(pk=id)
+        except Comment.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        #this will retrieve the comments
+        if request.method == 'GET':
+            serializer = CommentSerializer(comment)
+            return Response(serializer.data)
+        #this will allow the user to update their comment
+        elif request.method == 'PUT':
+            serializer = CommentSerializer(comment, data= request.data)
+            if serializer.is_valid():
+                serializer.save
+        #Allowing the comments to be deleted
+        elif request.method == 'DELETE':
+            comment.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+    #delete option
+    def delete(self, request, *args, **kwargs):
+        Comment.objects.all().delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+            
+class CommentRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Comment.objects.all()
+    serializer_class = CommentSerializer
+    lookup_field = 'pk'
 
 
 class UserListCreate(generics.ListCreateAPIView):

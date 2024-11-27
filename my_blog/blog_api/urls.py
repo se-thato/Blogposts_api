@@ -6,9 +6,12 @@ from blog_api.views import ListUsers, CustomAuthToken
 urlpatterns = [
     path('posts/', views.PostListCreate.as_view(), name='post-create'),
     path('posts/<int:pk>/', views.PostRetrieveUpdateDestroy.as_view(), name= 'update'),
+    #User section
     path('user/', views.UserListCreate.as_view(), name='user'),
     path('user/<int:pk>/', views.UserRetrieveUpdateDestroy.as_view(), name= 'update-user'),
+    #comments section
     path('comments/', views.CommentListCreate.as_view(), name= 'comments'),
+    path('comments/<int:pk>/', views.CommentRetrieveUpdateDestroy.as_view(), name= 'comments_update'),
     
     path("register/", views.RegisterView.as_view(), name="register"),
     path('login/', views.LoginView.as_view(), name='login'),
