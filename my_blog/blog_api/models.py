@@ -31,6 +31,11 @@ class Comment(models.Model):
         #when someone comment we'll be able to see the post, title and their name
         return '%s - %s' % (self.post.title, self.author)
     
+
+
+#creating the subscription section 
+class Subscription(models.Model):
+    pass
 """
 class User(models.Model):
     username = models.CharField(max_length=100)
