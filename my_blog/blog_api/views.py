@@ -2,8 +2,8 @@ from django.shortcuts import render
 from rest_framework import generics, status,authentication, permissions
 from rest_framework.response import Response
 from rest_framework.exceptions import AuthenticationFailed
-from .models import Post, User, Comment
-from .serializers import PostSerializer, UserSerializer, RegisterSerializer, CommentSerializer
+from .models import Post, User, Comment, Subscription
+from .serializers import PostSerializer, UserSerializer, RegisterSerializer, CommentSerializer, SubscriptionSerializer
 from django.http import JsonResponse
 from rest_framework.decorators import api_view
 from rest_framework.pagination import PageNumberPagination
@@ -81,7 +81,7 @@ class PostRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = PostSerializer
     lookup_field = 'pk'
 
-#Creating the commnet section
+#Creating the commnet view section
 class CommentListCreate(generics.ListCreateAPIView):
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
@@ -148,6 +148,74 @@ class CommentRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
     lookup_field = 'pk'
 
 
+#creating subscription view section
+class SubscriptionListCreate(generics.ListCreateAPIView):
+    #GET(get all the the subscription) POST(create new subscription)
+
+    queryset = Subscription.objects.all()
+    serializer_class = SubscriptionSerializer
+    #only authenticated/logged in users who can see the subscriber
+    permission_classes = [permissions.IsAuthenticated] 
+
+    #GET will display list of all subscriptions for loggeg in users
+    def get(self, request):
+        subscriptions=Subscription.objects.filter(user=request.user)
+        serializer = SubscriptionSerializer(subscriptions, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    #POST will allow users to create new subscription
+    def post(self, request):
+        SubscriptionSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(user=request.user)
+            #save subscription for authenticated user or logged in user
+            return Response(serializer.data,status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class SubscriptionDetailView(generics.ListCreateAPIView):
+    #GET, PUT and DELETE
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self, pk):
+        try:
+            return Subscription.objects.get(pk=pk, user=self.request.user)
+        except Subscription.DoesNotExist:
+            return None
+
+    #GET will get the details of a subscription based on its primary key(pk)
+    def get(self, request, pk):
+        subscription = self.get_object(pk)
+        if subscription is None:
+            return Response ({"error": "Ohh no!! Subscription not found."}, status=status.HTTP_404_NOT_FOUND)
+            serializer = SubscriptionSerializer(subscription)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+    #PUT will update a subscription details
+    def put(self, request, pk):
+        subscription = self.get_object(pk)
+        if subscription is None:
+            return Response ({"error": "Ohh no!! Subscription not found."}, status=status.HTTP_404_NOT_FOUND)
+            serializer = SubscriptionSerializer(subscription, data=request.data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    #DELETE will delete a specific subscription
+    def delete(self, request, pk):
+        subscription = self.get_object(pk)
+        if subscription is None:
+            return Response ({"error": "Ohh no!! Subscription not found."}, status=status.HTTP_404_NOT_FOUND)
+            subscription.delete()
+        return Response ({"message": "Subscription is deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
+
+    def delete(self, request, *args, **kwargs):
+        Subscription.objects.all().delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
 class UserListCreate(generics.ListCreateAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
@@ -206,13 +274,13 @@ class CustomAuthToken(ObtainAuthToken):
 #register a user
 class RegisterView(APIView):
     def post(self, request):
-        serializer = RegisterSerializer(data=request.data)
+        return Response({'message': "You've Been Registered Successfully!!"}, status=status.HTTP_201_CREATED)
 
-        if serializer.is_valid():
-            user = serializer.save()
-            
+    @api_view(['POST'])
+    def register(request):
+        if request.method == 'POST':
             return Response({'message': "You've Been Registered Successfully!!"}, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 class LoginView(APIView):
     def post(self, request):

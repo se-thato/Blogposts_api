@@ -12,7 +12,10 @@ urlpatterns = [
     #comments section
     path('comments/', views.CommentListCreate.as_view(), name= 'comments'),
     path('comments/<int:pk>/', views.CommentRetrieveUpdateDestroy.as_view(), name= 'comments_update'),
-    
+    #subscription section
+    path('subscriptions/', views.SubscriptionListCreate.as_view(), name = "subscriptions_list"),
+    path('subscriptions/<int:pk>/', views.SubscriptionDetailView.as_view(), name = "subscriptions_details"),
+
     path("register/", views.RegisterView.as_view(), name="register"),
     path('login/', views.LoginView.as_view(), name='login'),
 

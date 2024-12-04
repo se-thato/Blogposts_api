@@ -6,7 +6,7 @@ from rest_framework.authtoken.models import Token
 from django.conf import settings
 from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.models import AbstractUser
-
+from django.contrib.auth import get_user_model
 
 class Post(models.Model):
     title = models.CharField(max_length= 100)
@@ -34,27 +34,26 @@ class Comment(models.Model):
 
 
 #creating the subscription section 
+User = get_user_model
+
 class Subscription(models.Model):
-    pass
-"""
-class User(models.Model):
-    username = models.CharField(max_length=100)
-    email = models.EmailField(max_length=15, unique=True)
-    password = models.CharField(max_length=100)
-    
-    def __str__(self): 
-        return self.username
-    
-"""
+    user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE, related_name= "subscription")
+    author = models.ForeignKey(get_user_model(), on_delete=models.CASCADE, null=True, blank=True, related_name = "subscribers")
+    published_date = models.DateTimeField(auto_now_add= True)
+
+    class Meta:
+        #preventing repeated subsciptions
+        unique_together = ("user", "author")
+
+    def __str__(self):
+        return f"{self.user} subscribes to {self.author}"
+ 
 
 #creating an authentication(generatin a token when a user create an account)
 @receiver(post_save, sender=settings.AUTH_USER_MODEL)
 def create_auth_token(sender, instance=None, created=False, **kwargs):
     if created:
         Token.objects.create(user=instance)
-
-
-
 
 
 

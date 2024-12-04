@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Post, User, Comment
+from .models import Post, User, Comment, Subscription
 from django.contrib.auth.models import User
 from rest_framework.validators import ValidationError
 
@@ -23,51 +23,12 @@ class CommentSerializer(serializers.ModelSerializer):
         model = Comment
         fields = ['id', 'author', 'post', 'comment', 'published_date' ]
 
-
-"""
-class RegisterSerializer(serializers.ModelSerializer):
-    username = serializers.CharField(max_length=100)
-    email = serializers.EmailField(max_length=15)
-    password = serializers.CharField(max_length=100)
-
+class SubscriptionSerializer(serializers.ModelSerializer):
     class Meta:
-        model = User
-        fields = ['username', 'password', 'email']
-        #hiding the password
-        extra_kwargs = {
-            'password': {'write_only': True}
-        }
+        model = Subscription
+        fields = ['id', 'author', 'user', 'published_date' ]
+        read_only_fields = ["user", "published_at"]
 
-    #creating validation for the user
-    def validate(self,attrs):
-
-        email_exists = User.objects.filter(email=attrs['email']).exists
-
-        if email_exists:
-            raise ValidationError("Email already exists")
-        
-        return super().validate(attrs)
-    
-
-
-    def create(self, validated_data):
-        password =validated_data.pop('password', None)
-        instance = self.Meta.model(**validated_data)
-        if password is not None:
-            instance.set_password(password)
-            instance.save()
-
-            return instance
-
-        user =super().create(validated_data)
-
-        user.set_password(password)
-
-        user.save()
-
-        return user
-
-"""
 
 class RegisterSerializer(serializers.ModelSerializer):
     username = serializers.CharField(max_length=100)
