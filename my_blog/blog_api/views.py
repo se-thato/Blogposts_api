@@ -2,8 +2,8 @@ from django.shortcuts import render
 from rest_framework import generics, status,authentication, permissions
 from rest_framework.response import Response
 from rest_framework.exceptions import AuthenticationFailed
-from .models import Post, User, Comment, Subscription
-from .serializers import PostSerializer, UserSerializer, RegisterSerializer, CommentSerializer, SubscriptionSerializer
+from .models import Post, User, Comment, Subscription, Like
+from .serializers import PostSerializer, UserSerializer, RegisterSerializer, CommentSerializer, SubscriptionSerializer, LikeSerializer
 from django.http import JsonResponse
 from rest_framework.decorators import api_view
 from rest_framework.pagination import PageNumberPagination
@@ -148,6 +148,110 @@ class CommentRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
     lookup_field = 'pk'
 
 
+#creating Like and Rating Views 
+class LikeListCreate(generics.ListCreateAPIView):
+    queryset = Like.objects.all()
+    serializer_class = LikeSerializer
+    #only authenticated/logged in users who can see the likes
+    permission_classes = [permissions.IsAuthenticated] 
+    
+
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user)
+
+    @api_view(['GET', 'POST'])
+    def likes_list(request):
+
+        if request.method == 'GET':
+            like = Like.objects.all()
+            serializer = ListSerializer(like, many=True)
+            return Response(serializer.data)
+        
+        
+        if request.method == 'POST':
+            serializer = LikeSerializer(data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                post = get_object_or_404(Post, id=post_id)
+        if Like.objects.filter(user=request.user, post=post).exists():
+            return Response({"message": "Post liked successfully."}, status=status.HTTP_201_CREATED)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+    @api_view(['GET', 'PUT', 'DELETE'])
+    def likes_detail(request, id):
+
+        try:
+            likes = Like.objects.get(pk=id)
+        except Like.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        #this will retrieve all the likes
+        if request.method == 'GET':
+            serializer = LikeSerializer(like)
+            return Response(serializer.data)
+        #this will allow the user to change the like
+        elif request.method == 'PUT':
+            serializer = LikeSerializer(like, data= request.data)
+            if serializer.is_valid():
+                serializer.save
+        #Allowing the likes to be deleted
+        elif request.method == 'DELETE':
+            like.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+    #delete option
+    def delete(self, request, *args, **kwargs):
+        Like.objects.all().delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class LikeRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
+    #GET, PUT and DELETE
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self, pk):
+        try:
+            return Like.objects.get(pk=pk, user=self.request.user)
+        except Like.DoesNotExist:
+            return None
+
+    #GET will get the details of likes based on its primary key(pk)
+    def get(self, request, pk):
+        likes = self.get_object(pk)
+        if likes is None:
+            return Response ({"error": "Ohh no!! Liking the post was unsuccessfully."}, status=status.HTTP_404_NOT_FOUND)
+            serializer = LikeSerializer(likes)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+    #PUT will update liking details
+    def put(self, request, pk):
+        likes = self.get_object(pk)
+        if likes is None:
+            return Response ({"error": "Liking the post was unsuccessfully."}, status=status.HTTP_404_NOT_FOUND)
+            serializer = LikeSerializer(likes, data=request.data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    #DELETE will delete a specific like
+    def delete(self, request, pk):
+        likes = self.get_object(pk)
+        if likes is None:
+            return Response ({"error": "Ohh no!! Like not found."}, status=status.HTTP_404_NOT_FOUND)
+            likes.delete()
+        return Response ({"message": "Like is deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
+
+    def delete(self, request, *args, **kwargs):
+        Like.objects.all().delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+
+
 #creating subscription view section
 class SubscriptionListCreate(generics.ListCreateAPIView):
     #GET(get all the the subscription) POST(create new subscription)
@@ -215,6 +319,8 @@ class SubscriptionDetailView(generics.ListCreateAPIView):
     def delete(self, request, *args, **kwargs):
         Subscription.objects.all().delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
 
 class UserListCreate(generics.ListCreateAPIView):
     queryset = User.objects.all()

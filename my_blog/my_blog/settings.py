@@ -153,3 +153,6 @@ REST_FRAMEWORK = {
       'rest_framework.pagination.PageNumberPagination',
        'PAGE_SIZE': 1
 }
+
+
+lOGIN_REDIRECT_URL = '/'

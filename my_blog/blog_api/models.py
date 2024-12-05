@@ -7,6 +7,8 @@ from django.conf import settings
 from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.models import AbstractUser
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import User
+
 
 class Post(models.Model):
     title = models.CharField(max_length= 100)
@@ -31,6 +33,26 @@ class Comment(models.Model):
         #when someone comment we'll be able to see the post, title and their name
         return '%s - %s' % (self.post.title, self.author)
     
+
+#Creating the like section 
+class Like(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    post = models.ForeignKey(Post, related_name= "likes", on_delete=models.CASCADE)
+    published_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username} liked {self.post.title}"
+
+
+#Rating section 
+class Rating(models.Model):
+    post = models.ForeignKey(Post, related_name= "ratings", on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    #rating score on a scale
+    score = models.IntegerField()
+    published_at = models.DateTimeField(auto_now_add=True)
+
+
 
 
 #creating the subscription section 
@@ -68,6 +90,10 @@ class CustomerUserManager(BaseUserManager):
         user.set_password(password)
         user.save(using=self._db)
         return user
+
+
+
+
 
 """
         user=self.model(

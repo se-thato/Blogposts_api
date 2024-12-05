@@ -1,6 +1,7 @@
 from django.urls import path
 from . import views
 from blog_api.views import ListUsers, CustomAuthToken
+from django.contrib.auth.views import LoginView
 
 
 urlpatterns = [
@@ -15,9 +16,13 @@ urlpatterns = [
     #subscription section
     path('subscriptions/', views.SubscriptionListCreate.as_view(), name = "subscriptions_list"),
     path('subscriptions/<int:pk>/', views.SubscriptionDetailView.as_view(), name = "subscriptions_details"),
+    #like and rating section 
+    path('likes/', views.LikeListCreate.as_view(), name = "liked_posts"),
+    path('likes/<int:pk>/', views.LikeRetrieveUpdateDestroy.as_view(), name = "likes_delete"),
 
     path("register/", views.RegisterView.as_view(), name="register"),
     path('login/', views.LoginView.as_view(), name='login'),
+    
 
     path('api/users/', ListUsers.as_view()),
     path('api/token/auth/', CustomAuthToken.as_view()),

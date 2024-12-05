@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Post, User, Comment, Subscription
+from .models import Post, User, Comment, Subscription, Like, Rating
 from django.contrib.auth.models import User
 from rest_framework.validators import ValidationError
 
@@ -22,6 +22,16 @@ class CommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comment
         fields = ['id', 'author', 'post', 'comment', 'published_date' ]
+
+class LikeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Like
+        fields = '__all__'
+
+class RatingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Rating
+        fields = "__all__"
 
 class SubscriptionSerializer(serializers.ModelSerializer):
     class Meta:
