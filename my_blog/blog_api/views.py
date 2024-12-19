@@ -5,7 +5,7 @@ from rest_framework.exceptions import AuthenticationFailed
 from .models import Post, User, Comment, Subscription, Like
 from .serializers import PostSerializer, UserSerializer, RegisterSerializer, CommentSerializer, SubscriptionSerializer, LikeSerializer
 from django.http import JsonResponse
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, action
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.views import APIView
 from django.contrib.auth.models import User
@@ -95,6 +95,23 @@ class CommentListCreate(generics.ListCreateAPIView):
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
 
+    #nested comments and votings
+    #when upvoted
+    @action(detail=True, methods=['post'])
+    def upvote(self, request, pk=None):
+        comment = self.get_object()
+        comment.upvotes += 1
+        comment.save()
+        return Response({'status': 'upvoted', 'total_votes': comment.total_votes})
+    
+    #when downvoted
+    @action(detail=True, methods=['post'])
+    def downvotes(self, request, pk=None):
+        comment = self.get_object()
+        comment.donvotes += 1
+        comment.save()
+        return Response({'status': 'downvoted', 'total_votes': comment.total_votes})
+
     @api_view(['GET', 'POST'])
     def comment_list(request):
 
@@ -113,7 +130,21 @@ class CommentListCreate(generics.ListCreateAPIView):
             if serializer.is_valid():
                 serializer.save()
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
-
+            
+            
+    @api_view(['POST'])
+    #allowing users to post a reply to an existing comment by specifying the parent comment id
+    def reply_to_comment(request, pk):
+        try:
+            parent_comment = Comment.objects.get(pk=pk)
+        except Comment.DoesNotExist:
+            return Response ({'Error': 'Opps Comment Not Found'}, status=404)
+        
+        serializer = CommentSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(author=request.user, parent=parent_comment)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.error, status=400)
 
     @api_view(['GET', 'PUT', 'DELETE'])
     def comments_detail(request, id):

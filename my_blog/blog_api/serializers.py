@@ -19,9 +19,15 @@ class UserSerializer(serializers.ModelSerializer):
 
     
 class CommentSerializer(serializers.ModelSerializer):
+    replies = serializers.SerializerMethodField()
     class Meta:
         model = Comment
-        fields = ['id', 'author', 'post', 'comment', 'published_date' ]
+        fields = ['id', 'author', 'post', 'comment', 'published_date', 'upvotes', 'downvotes', 'parent', 'replies']
+
+    def get_replies(self, object):
+        if object.replies.exists():
+            return CommentSerializer(object.replies.all(), many=True).data
+        return []
 
 class LikeSerializer(serializers.ModelSerializer):
     class Meta:

@@ -16,7 +16,7 @@ class Post(models.Model):
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     content = models.TextField()
     published_date = models.DateTimeField(auto_now_add=True)
-    category = models.TextField()
+    category = models.CharField(max_length = 50, default='Tech')
 
     def __str__(self): 
         return self.title   
@@ -28,11 +28,20 @@ class Comment(models.Model):
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     comment = models.TextField()
     published_date = models.DateTimeField(auto_now_add=True)
+    #adding nested comments,mentions and voting
+    parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name="replies")
+    upvotes = models.IntegerField(default=0)
+    downvotes =models.IntegerField(default=0)
+    updated_at = models.DateField(auto_now=True)
 
     def __str__(self):
         #when someone comment we'll be able to see the post, title and their name
         return '%s - %s' % (self.post.title, self.author)
     
+    @property
+    def total_votes(self):
+        return self.upvotes - self.downvotes
+
 
 #Creating the like section 
 class Like(models.Model):

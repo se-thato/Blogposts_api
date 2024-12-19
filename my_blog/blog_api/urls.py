@@ -2,6 +2,7 @@ from django.urls import path
 from . import views
 from blog_api.views import ListUsers, CustomAuthToken
 from django.contrib.auth.views import LoginView
+#from .views import reply_to_comment
 
 
 urlpatterns = [
@@ -13,6 +14,7 @@ urlpatterns = [
     #comments section
     path('comments/', views.CommentListCreate.as_view(), name= 'comments'),
     path('comments/<int:pk>/', views.CommentRetrieveUpdateDestroy.as_view(), name= 'comments_update'),
+    #path('comments_reply/<int:pk>/', views.reply_to_comment.as_view(), name= 'reply_to_comment' ),
     #subscription section
     path('subscriptions/', views.SubscriptionListCreate.as_view(), name = "subscriptions_list"),
     path('subscriptions/<int:pk>/', views.SubscriptionDetailView.as_view(), name = "subscriptions_details"),
