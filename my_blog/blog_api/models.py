@@ -17,9 +17,18 @@ class Post(models.Model):
     content = models.TextField()
     published_date = models.DateTimeField(auto_now_add=True)
     category = models.CharField(max_length = 50, default='Tech')
+    #metrics
+    comments_count = models.PositiveIntegerField(default=0)
+    likes_count = models.PositiveIntegerField(default=0)
+    shares_count = models.PositiveIntegerField(default=0)
+
+     #this will allow to show the popular post or treading post based on likes, comments, and shared
+    def popularity_sum(self):
+        return self.likes_count + (2 * self.comments_count) + (3 * self.shares_count)
 
     def __str__(self): 
-        return self.title   
+        return self.title  
+
 
 
 #creating a comment section

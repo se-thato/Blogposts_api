@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from rest_framework import generics, status,authentication, permissions
 from rest_framework.response import Response
 from rest_framework.exceptions import AuthenticationFailed
@@ -14,6 +14,7 @@ from rest_framework.authtoken.models import Token
 from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.request import Request
 import jwt, datetime
+from django.core.mail import send_mail
 
 class PostListCreate(generics.ListCreateAPIView):
     queryset = Post.objects.all()
@@ -46,6 +47,14 @@ class PostListCreate(generics.ListCreateAPIView):
                 serializer.save()
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
 
+    #this view will allow popular/trending posts to be retrieved sorted by calculated
+    #show the popularity sum /total
+    @api_view(['GET'])
+    def popular_posts(request):
+        posts = Post.objects.annotate(popularity = F("likes_count") + (2 * F("comments_count")) + (3 * F("shares_count"))).order_by("-popularity")[:10]
+        #this will get top 10 trending posts
+        serializer = PostSerializer(posts, many=True)
+        return Response(serializer.data)
 
 
     @api_view(['GET', 'PUT', 'DELETE'])
@@ -81,6 +90,8 @@ class PostRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = PostSerializer
     lookup_field = 'pk'
 
+
+
 #Creating the commnet view section
 class CommentListCreate(generics.ListCreateAPIView):
     queryset = Comment.objects.all()
@@ -108,9 +119,22 @@ class CommentListCreate(generics.ListCreateAPIView):
     @action(detail=True, methods=['post'])
     def downvotes(self, request, pk=None):
         comment = self.get_object()
+
         comment.donvotes += 1
         comment.save()
         return Response({'status': 'downvoted', 'total_votes': comment.total_votes})
+
+    #notifying users when they are being mentioned in a comment
+    def notify_mentions(comment):
+        mentions = re.findall(r'@(\w+)', comment.content)
+        for username in mentions:
+            try:
+                user = User.objects.get(username=username)
+                send_mail("Hey someone mentioned you in a comment!!", f"{comment.author} mentioned you in a comment: '{comment.content}'",
+                          "no-reply@blog.com", [user.email], )
+            except User.DoesNotExist:
+                pass
+
 
     @api_view(['GET', 'POST'])
     def comment_list(request):
@@ -145,6 +169,27 @@ class CommentListCreate(generics.ListCreateAPIView):
             serializer.save(author=request.user, parent=parent_comment)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.error, status=400)
+
+    @api_view(['POST'])
+    #allowing comments_count when a comment is being added
+    def comment_to_posts(request, pk):
+        post = get_object_or_404(Post, pk=pk)
+        #since we have comment model this will allow us to see the action on comments
+        if request.user in post.comments.all():
+            post.comments.remove(request.user)
+            post.likes_count -= 1
+            action = "comment deleted"
+            post.save()
+            return Response({"message": f"Ohh No!!{action} from the post"})
+
+        else:
+            post.comments.add(request.user)
+            post.comments_count += 1
+            action = 'commented'
+            post.save()
+        return Response({"message": f"You have {action} to the post"})
+    
+    
 
     @api_view(['GET', 'PUT', 'DELETE'])
     def comments_detail(request, id):
@@ -206,7 +251,24 @@ class LikeListCreate(generics.ListCreateAPIView):
                 post = get_object_or_404(Post, id=post_id)
         if Like.objects.filter(user=request.user, post=post).exists():
             return Response({"message": "Post liked successfully."}, status=status.HTTP_201_CREATED)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        #return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @api_view(['POST'])
+    def like_posts(request, pk):
+        post = get_object_or_404(Post, pk=pk)
+        #since we have Like model
+        if request.user in post.likes.all():
+            post.likes.remove(request.user)
+            post.likes_count -= 1
+            action = "unliked"
+        else:
+            post.likes.add(request.user)
+            post.likes_count += 1
+            action = 'liked'
+            post.save()
+        return Response({"message": f"You have {action} the post!!"})
+
+
 
 
     @api_view(['GET', 'PUT', 'DELETE'])
@@ -218,16 +280,16 @@ class LikeListCreate(generics.ListCreateAPIView):
             return Response(status=status.HTTP_404_NOT_FOUND)
         #this will retrieve all the likes
         if request.method == 'GET':
-            serializer = LikeSerializer(like)
+            serializer = LikeSerializer(likes)
             return Response(serializer.data)
         #this will allow the user to change the like
         elif request.method == 'PUT':
-            serializer = LikeSerializer(like, data= request.data)
+            serializer = LikeSerializer(likes, data= request.data)
             if serializer.is_valid():
                 serializer.save
         #Allowing the likes to be deleted
         elif request.method == 'DELETE':
-            like.delete()
+            likes.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -263,10 +325,10 @@ class LikeRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
         if likes is None:
             return Response ({"error": "Liking the post was unsuccessfully."}, status=status.HTTP_404_NOT_FOUND)
             serializer = LikeSerializer(likes, data=request.data, partial=True)
-            if serializer.is_valid():
-                serializer.save()
-                return Response(serializer.data, status=status.HTTP_200_OK)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     #DELETE will delete a specific like
     def delete(self, request, pk):
@@ -279,7 +341,6 @@ class LikeRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
     def delete(self, request, *args, **kwargs):
         Like.objects.all().delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
-
 
 
 
